@@ -41,7 +41,7 @@ model_selection:
   output_storage_type: 
     estimator: pickle 
     metrics_results: csv
-  class: ConPipe.ModelSelection.ModelSelection
+  class: ConPipe.GraphNode.ModelSelection.ModelSelection
   parameters:
     parameter_optimizer: 
       class: sklearn.model_selection.GridSearchCV
@@ -108,7 +108,7 @@ model_evaluation:
       roc:
         function: ConPipe.visualizations.roc_chart
       confusion_matrix: 
-        function: ConPipe.visualizations.vonfusion_matrix_chart
+        function: ConPipe.visualizations.confusion_matrix_chart
         parameters:
           annot: On
           cmap: flare
