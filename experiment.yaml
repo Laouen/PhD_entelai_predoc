@@ -1,0 +1,115 @@
+general:
+  module_paths: ['/home/lbelloli/git/doctorado/PhD_entelai_predoc']
+  verbose: 11
+
+data_preprocess:
+  output_storage_type: csv # csv, json, pickle o dict {param_name: output_storage_type}
+  function: entelai_predoc_modules.preprocess_data.preprocess_data
+
+feature_extraction:
+  input_from: ['data_preprocess']
+  input_map:
+    data_preprocess:
+      X: X
+  output_storage_type: csv
+  function: entelai_predoc_modules.feature_extraction.feature_extraction
+  parameters:
+    columns_to_include: ['alcohol', 'malic_acid', 'ash', 'alcalinity_of_ash', 'magnesium', 'total_phenols', 'flavanoids', 'nonflavanoid_phenols', 'proanthocyanins', 'color_intensity', 'hue', 'od280/od315_of_diluted_wines', 'proline']
+    columns_to_drop: []
+
+data_split:
+  input_from: ['feature_extraction', 'data_preprocess']
+  input_map:
+    feature_extraction:
+      X: 1
+    data_preprocess:
+      y: 2 # paramter mapped to argument position
+  output_storage_type: csv
+  class: ConPipe.GraphNode.DataSplit.DataSplit
+  parameters:
+    function: sklearn.model_selection.train_test_split
+    parameters:
+      test_size: None
+      random_state: 42
+      shuffle: On
+
+model_selection:
+  input_from: ['data_split']
+  input_map:
+    X_train: X
+    y_train: y
+  output_storage_type: 
+    estimator: pickle 
+    metrics_results: csv
+  class: ConPipe.ModelSelection.ModelSelection
+  parameters:
+    parameter_optimizer: 
+      class: sklearn.model_selection.GridSearchCV
+      scoring: accuracy # esto tiene que poder ser una funcion custom desde el módulo también
+      parameters: 
+        refit: On
+    cv: 
+      class: sklearn.model_selection.StratifiedKFold 
+      parameters:
+        n_splits: 5
+        shuffle: On
+        random_state: 42
+    models: 
+      LogisticRegression:
+        class: sklearn.linear_model.LogisticRegression
+        constructor_params:
+          random_state: 42
+        param_grid:
+          penalty: ['l1', 'l2']
+          C: [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+          solver: ['lbfgs', 'saga', 'liblinear']
+        fit_params:
+          sample_weight: None
+      RandomForestClassifier:
+        class: sklearn.ensemble.RandomForestClassifier
+        constructor_params:
+          random_state: 42
+        param_grid:
+          n_estimators: [10, 100, 1000]
+          criterion: ['gini', 'entropy']
+          max_depth: [2,6,10]
+        fit_params:
+          sample_weight: None
+
+model_evaluation:
+  input_from: ['model_selection','data_split']
+  input_map:
+    model_selection:
+      estimator: estimator
+    data_split:
+      X_train: X_train
+      y_train: y_train
+      X_test: X_test
+      y_test: y_test
+  class: ConPipe.GraphNode.ModelEvaluation.ModelEvaluation
+  parameters:
+    fit_model: Off
+    tag: test
+    output_path: /path/output
+    class_labels: 
+      0: Negative
+      1: Positive
+    scores: 
+      accuracy:
+        function: sklearn.metrics.accuracy_score
+        score_type: pred
+      recall:
+        function: sklearn.metrics.recall_score
+        score_type: pred
+      auc:
+        function: sklearn.metrics.roc_auc_score
+        score_type: proba
+    charts:
+      roc:
+        function: ConPipe.visualizations.roc_chart
+      confusion_matrix: 
+        function: ConPipe.visualizations.vonfusion_matrix_chart
+        parameters:
+          annot: On
+          cmap: flare
+          fmt: g
