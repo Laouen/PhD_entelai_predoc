@@ -23,21 +23,22 @@ data_split:
     feature_extraction:
       X: 1
     data_preprocess:
-      y: 2 # paramter mapped to argument position
+      y: 2
   output_storage_type: csv
   class: ConPipe.GraphNode.DataSplit.DataSplit
   parameters:
     function: sklearn.model_selection.train_test_split
     parameters:
-      test_size: None
+      test_size: 0.25
       random_state: 42
       shuffle: On
 
 model_selection:
   input_from: ['data_split']
   input_map:
-    X_train: X
-    y_train: y
+    data_split:
+      X_train: X
+      y_train: y
   output_storage_type: 
     estimator: pickle 
     metrics_results: csv
@@ -59,12 +60,13 @@ model_selection:
         class: sklearn.linear_model.LogisticRegression
         constructor_params:
           random_state: 42
+          penalty: l2
+          max_iter: 10000
         param_grid:
-          penalty: ['l1', 'l2']
-          C: [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+          C: [0.2, 0.4, 0.6, 0.8, 1.0]
           solver: ['lbfgs', 'saga', 'liblinear']
         fit_params:
-          sample_weight: None
+          sample_weight: null
       RandomForestClassifier:
         class: sklearn.ensemble.RandomForestClassifier
         constructor_params:
@@ -74,7 +76,7 @@ model_selection:
           criterion: ['gini', 'entropy']
           max_depth: [2,6,10]
         fit_params:
-          sample_weight: None
+          sample_weight: null
 
 model_evaluation:
   input_from: ['model_selection','data_split']
@@ -90,7 +92,7 @@ model_evaluation:
   parameters:
     fit_model: Off
     tag: test
-    output_path: /path/output
+    output_path: ./
     class_labels: 
       0: Negative
       1: Positive

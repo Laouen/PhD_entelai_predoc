@@ -5,5 +5,5 @@ def preprocess_data():
 
     return {
         'X': data['data'],
-        'y': data['target']
+        'y': (data['target'] == 1).astype(int).values
     }
