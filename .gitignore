@@ -1,0 +1,5 @@
+# ignore pyc files
+**.pyc
+
+# Ignore the runner cached state
+execution_state

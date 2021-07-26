@@ -4,7 +4,8 @@ general:
   verbose: 11
 
 data_preprocess:
-  output_storage_type: npy # csv, json, pickle o dict {param_name: output_storage_type}
+  output_storage_type: npy
+  cache_output: On
   function: entelai_predoc_modules.preprocess_data.preprocess_data
 
 feature_extraction:
@@ -12,6 +13,7 @@ feature_extraction:
     data_preprocess:
       X: X
   output_storage_type: npy
+  cache_output: On
   function: entelai_predoc_modules.feature_extraction.feature_extraction
   parameters:
     columns_to_include: ['alcohol', 'malic_acid', 'ash', 'alcalinity_of_ash', 'magnesium', 'total_phenols', 'flavanoids', 'nonflavanoid_phenols', 'proanthocyanins', 'color_intensity', 'hue', 'od280/od315_of_diluted_wines', 'proline']
@@ -24,6 +26,7 @@ data_split:
     data_preprocess:
       y: 2
   output_storage_type: npy
+  cache_output: On
   class: ConPipe.GraphNode.DataSplit.DataSplit
   parameters:
     function: sklearn.model_selection.train_test_split
@@ -39,7 +42,8 @@ model_selection:
       y_train: y
   output_storage_type: 
     estimator: pickle 
-    metrics_results: csv
+    cv_results_: csv
+  cache_output: On
   class: ConPipe.GraphNode.ModelSelection.ModelSelection
   parameters:
     parameter_optimizer: 
@@ -65,25 +69,16 @@ model_selection:
           solver: ['lbfgs']
         fit_params:
           sample_weight: null
-      RandomForestClassifier:
-        class: sklearn.ensemble.RandomForestClassifier
-        constructor_params:
-          random_state: 42
-        param_grid:
-          n_estimators: [10]
-          criterion: ['gini']
-          max_depth: [2,6]
-        fit_params:
-          sample_weight: null
 
 predict_train:
-  output_storage_type: csv
   input_map:
     model_selection:
       estimator: estimator
     data_split:
       X_train: X
       y_train: y
+  output_storage_type: npy
+  cache_output: Off
   class: ConPipe.GraphNode.ModelPrediction.ModelPrediction
   parameters:
     cv:
@@ -94,13 +89,14 @@ predict_train:
         random_state: 42
 
 predict_test:
-  output_storage_type: csv
   input_map:
     model_selection:
       estimator: estimator
     data_split:
       X_test: X
       y_test: y
+  output_storage_type: npy
+  cache_output: On
   class: ConPipe.GraphNode.ModelPrediction.ModelPrediction
 
 evaluate_test:
@@ -110,6 +106,7 @@ evaluate_test:
       y_pred: y_pred
       y_probas: y_probas
       classes: classes
+  cache_output: On
   class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: test
@@ -151,6 +148,7 @@ evaluate_train:
       y_pred: y_pred
       y_probas: y_probas
       classes: classes
+  cache_output: On
   class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: train
