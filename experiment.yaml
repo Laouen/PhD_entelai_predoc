@@ -1,16 +1,17 @@
 general:
   module_paths: ['/home/lbelloli/git/doctorado/PhD_entelai_predoc']
+  save_path: ./
   verbose: 11
 
 data_preprocess:
-  output_storage_type: csv # csv, json, pickle o dict {param_name: output_storage_type}
+  output_storage_type: npy # csv, json, pickle o dict {param_name: output_storage_type}
   function: entelai_predoc_modules.preprocess_data.preprocess_data
 
 feature_extraction:
   input_map:
     data_preprocess:
       X: X
-  output_storage_type: csv
+  output_storage_type: npy
   function: entelai_predoc_modules.feature_extraction.feature_extraction
   parameters:
     columns_to_include: ['alcohol', 'malic_acid', 'ash', 'alcalinity_of_ash', 'magnesium', 'total_phenols', 'flavanoids', 'nonflavanoid_phenols', 'proanthocyanins', 'color_intensity', 'hue', 'od280/od315_of_diluted_wines', 'proline']
@@ -22,7 +23,7 @@ data_split:
       X: 1
     data_preprocess:
       y: 2
-  output_storage_type: csv
+  output_storage_type: npy
   class: ConPipe.GraphNode.DataSplit.DataSplit
   parameters:
     function: sklearn.model_selection.train_test_split
@@ -83,7 +84,7 @@ predict_train:
     data_split:
       X_train: X
       y_train: y
-  class: ConPipe.GraphNode.ModelExecution.ModelExecution
+  class: ConPipe.GraphNode.ModelPrediction.ModelPrediction
   parameters:
     cv:
       class: sklearn.model_selection.StratifiedKFold 
@@ -100,7 +101,7 @@ predict_test:
     data_split:
       X_test: X
       y_test: y
-  class: ConPipe.GraphNode.ModelExecution.ModelExecution
+  class: ConPipe.GraphNode.ModelPrediction.ModelPrediction
 
 evaluate_test:
   input_map:
@@ -109,7 +110,7 @@ evaluate_test:
       y_pred: y_pred
       y_probas: y_probas
       classes: classes
-  class: ConPipe.GraphNode.ModelEvaluation.ModelEvaluation
+  class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: test
     output_path: ./
@@ -150,7 +151,7 @@ evaluate_train:
       y_pred: y_pred
       y_probas: y_probas
       classes: classes
-  class: ConPipe.GraphNode.ModelEvaluation.ModelEvaluation
+  class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: train
     output_path: ./
