@@ -7,6 +7,8 @@ data_preprocess:
   output_storage_type: npy
   cache_output: On
   function: entelai_predoc_modules.preprocess_data.preprocess_data
+  parameters:
+    
 
 feature_extraction:
   input_map:
@@ -67,6 +69,15 @@ model_selection:
         param_grid:
           C: [0.2, 0.4]
           solver: ['lbfgs']
+        fit_params:
+          sample_weight: null
+      RandomForestClasifier:
+        class: sklearn.ensemble.RandomForestClassifier
+        constructor_params:
+          random_state: 42
+        param_grid:
+          max_depth: [2,4,6]
+          n_estimators: [10, 100, 1000]
         fit_params:
           sample_weight: null
 
