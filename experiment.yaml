@@ -13,6 +13,8 @@ feature_extraction:
   input_map:
     data_preprocess:
       X: X
+      y: y
+      features: features
   output_storage_type: npy
   cache_output: On
   function: entelai_predoc_modules.feature_extraction.feature_extraction

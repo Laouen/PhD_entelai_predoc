@@ -216,7 +216,18 @@ def preprocess_data(curated_targets, data_entelai_predoc_server):
         df[new_cols[-1]] = X
         df.drop(col, axis=1, inplace=True)
 
-    feature_cols = np.concatenate(new_cols + [numerical_features])
+    # Remove binary complementary rows
+    binary_feature_negations = [f'{col.strip().replace(" ","_")}_No' for col in binary_features]
+    df.drop(
+        binary_feature_negations,
+        axis=1,
+        inplace=True
+    )
+
+    feature_cols = [
+        f for f in np.concatenate(new_cols + [numerical_features])
+        if f not in binary_feature_negations
+    ]
 
     # Extract final X
     X = df[feature_cols]
