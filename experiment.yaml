@@ -4,29 +4,21 @@ general:
   verbose: 11
 
 data_preprocess:
-  output_storage_type: npy
+  output_storage_type: 
+    X: npy
+    y: npy
+    features: npy
+    label_encoder: pickle
   cache_output: On
   function: entelai_predoc_modules.preprocess_data.preprocess_data
   parameters:
-
-feature_extraction:
-  input_map:
-    data_preprocess:
-      X: X
-      y: y
-      features: features
-  output_storage_type: npy
-  cache_output: On
-  function: entelai_predoc_modules.feature_extraction.feature_extraction
-  parameters:
-    columns_to_include: ['alcohol', 'malic_acid', 'ash', 'alcalinity_of_ash', 'magnesium', 'total_phenols', 'flavanoids', 'nonflavanoid_phenols', 'proanthocyanins', 'color_intensity', 'hue', 'od280/od315_of_diluted_wines', 'proline']
-    columns_to_drop: []
+    curated_targets: ./data/predoc_fleni_targets_curada.xlsx
+    data_entelai_predoc_server: ./data/predoc_fleni_responses.csv
 
 data_split:
   input_map:
-    feature_extraction:
-      X: 1
     data_preprocess:
+      X: 1
       y: 2
   output_storage_type: npy
   cache_output: On
@@ -38,10 +30,21 @@ data_split:
       random_state: 42
       shuffle: On
 
-model_selection:
+feature_selection:
   input_map:
     data_split:
+      X_train: X_train
+      y_train: y_train
+      X_test: X_test
+  output_storage_type: npy
+  cache_output: On
+  function: entelai_predoc_modules.feature_selection.feature_selection
+
+model_selection:
+  input_map:
+    feature_selection:
       X_train: X
+    data_split:
       y_train: y
   output_storage_type: 
     estimator: pickle 
@@ -86,8 +89,9 @@ predict_train:
   input_map:
     model_selection:
       estimator: estimator
-    data_split:
+    feature_selection:
       X_train: X
+    data_split:
       y_train: y
   output_storage_type: npy
   cache_output: Off
@@ -104,8 +108,9 @@ predict_test:
   input_map:
     model_selection:
       estimator: estimator
-    data_split:
+    feature_selection:
       X_test: X
+    data_split:
       y_test: y
   output_storage_type: npy
   cache_output: On
@@ -123,11 +128,10 @@ evaluate_test:
   parameters:
     tag: test
     output_path: ./
-    classes: [0,1,2]
+    classes: [0,1]
     class_labels: 
       0: 0
       1: 1
-      2: 2
     scores: 
       accuracy:
         function: sklearn.metrics.accuracy_score
@@ -136,12 +140,6 @@ evaluate_test:
         function: sklearn.metrics.recall_score
         score_type: pred
         parameters:
-          average: weighted
-      auc:
-        function: sklearn.metrics.roc_auc_score
-        score_type: proba
-        parameters:
-          multi_class: ovr
           average: weighted
     charts:
       roc:
@@ -165,11 +163,10 @@ evaluate_train:
   parameters:
     tag: train
     output_path: ./
-    classes: [0,1,2]
+    classes: [0,1]
     class_labels: 
       0: 0
       1: 1
-      2: 2
     scores: 
       accuracy:
         function: sklearn.metrics.accuracy_score
@@ -178,12 +175,6 @@ evaluate_train:
         function: sklearn.metrics.recall_score
         score_type: pred
         parameters:
-          average: weighted
-      auc:
-        function: sklearn.metrics.roc_auc_score
-        score_type: proba
-        parameters:
-          multi_class: ovr
           average: weighted
     charts:
       roc:

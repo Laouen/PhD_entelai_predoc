@@ -28,7 +28,7 @@ demografic_cols = [
     'patient_weight'
 ]
 
-numerical_features = [
+numerical_cols = [
     'En cuanto a la intensidad del dolor, señale en una escala de 1 a 10 la intensidad máxima a la que han llegado sus dolores',
     '¿Cuántos días en los últimos 3 meses no ha podido ir a trabajar por su cefalea?',
     '¿Cuántos días en los últimos 3 meses no ha realizado sus tareas domésticas por sus cefaleas?',
@@ -102,8 +102,8 @@ columns_to_drop = [
     '¿Esta es su primer vez con el sistema de Pre-Consulta?'
 ]
 
-# Convert values to arrays and clean values
-def extract_value(x):
+# parse array values
+def parse_multilabel_value(x):
     if type(x) == str:
         if x.startswith('['):
             try:
@@ -122,7 +122,8 @@ def extract_value(x):
         return [x]
 
 
-def extract_numerical_value(x):
+# parse numerical valua
+def parse_numerical_value(x):
     if type(x) == str:
         return int(float(x.replace('[','').replace(']','').replace("'","").replace('"','')))
     else:
@@ -130,7 +131,7 @@ def extract_numerical_value(x):
 
 
 def preprocess_data(curated_targets, data_entelai_predoc_server):
-    
+
     # Read curated and server data and merge them 
     df_curated_targets = pd.read_excel(curated_targets)
     df_curated_targets = df_curated_targets[subject_info_cols_rename.keys()]
@@ -184,10 +185,10 @@ def preprocess_data(curated_targets, data_entelai_predoc_server):
         axis=1
     )
 
-    numerical_features = [c.strip().replace(' ','_') for c in numerical_features]
+    numerical_features = [col.strip().replace(' ','_') for col in numerical_cols]
 
     df[numerical_features] = df[numerical_features].apply(
-        lambda col: col.apply(extract_numerical_value),
+        lambda col: col.apply(parse_numerical_value),
         axis=1
     )
 
@@ -203,7 +204,7 @@ def preprocess_data(curated_targets, data_entelai_predoc_server):
 
     # One hot encode categorical features
     df[array_columns] = df[array_columns].apply(
-        lambda col: col.apply(extract_value), 
+        lambda col: col.apply(parse_multilabel_value), 
         axis=1
     )
 
@@ -230,10 +231,18 @@ def preprocess_data(curated_targets, data_entelai_predoc_server):
     ]
 
     # Extract final X
-    X = df[feature_cols]
+    X = df[feature_cols].values
 
-    # Encode y label
-    y = df['target'].values
-    y = LabelEncoder().fit_transform(y)
+    # Encode final y label
+    y = (df['target'] == 'Migraña sin aura').astype(int).values
+    #le = LabelEncoder()
+    #y = le.fit_transform(y)
 
-    return {'X': X, 'y': y, 'features': feature_cols}
+    print(f'Number of classes: {len(set(y))}')
+
+    return {
+        'X': X,
+        'y': y,
+        'features': feature_cols
+        #'label_encoder': le
+    }
