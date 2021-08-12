@@ -12,8 +12,9 @@ data_preprocess:
   cache_output: On
   function: entelai_predoc_modules.preprocess_data.preprocess_data
   parameters:
-    curated_targets: ./data/predoc_fleni_targets_curada.xlsx
-    data_entelai_predoc_server: ./data/predoc_fleni_responses.csv
+    curated_targets_file: ./data/predoc_fleni_targets_curada.xlsx
+    df_predoc_responses_file: ./data/predoc_fleni_responses.csv
+    target_schema: 'migrañas vs otras' # 'Migraña sin aura vs otras', 'Cefalea segundaria vs resto', 'Migraña vs CTA', 'Migraña sin aura vs cefalea tensional'
 
 data_split:
   input_map:
