@@ -234,7 +234,7 @@ def check_and_extract_single_value(x):
 def fill_empty_array_rows(x):
     return "['empty']" if x == '' else x
 
-def preprocess_data(curated_targets_file, df_predoc_responses_file):
+def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file, target_schema):
 
     ###################################################
     ## ****** Read abd clean-up curated data ******* ##
@@ -403,21 +403,27 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file):
     )
 
 
+    df.to_csv(output_file, sep=';', index=False)
+
     # Extract final X and y matrixes
-    if 'migrañas vs otras':
+    if target_schema == 'Migrañas vs otras':
         y = df['condition'].isin(['migraña sin aura', 'migraña con aura']).astype(int)
         X = df[feature_cols].values
-    elif 'Migraña sin aura vs otras':
+    
+    elif target_schema == 'Migraña sin aura vs otras':
         y = (df['condition'] == 'migraña sin aura').astype(int)
         X = df[feature_cols].values
-    elif 'Cefalea segundaria vs resto':
+    
+    elif target_schema == 'Cefalea segundaria vs resto':
         y = (df['condition'] == 'cefalea secundaria').astype(int)
         X = df[feature_cols].values
-    elif 'Migraña vs CTA':
+    
+    elif target_schema == 'Migraña vs CTA':
         df = df[df['condition'].isin(['migraña sin aura', 'migraña con aura', 'CTA'])]
         y = df['condition'].isin(['migraña sin aura', 'migraña con aura']).astype(int)
         X = df[feature_cols].values
-    elif 'Migraña sin aura vs cefalea tensional':
+    
+    elif target_schema == 'Migraña sin aura vs cefalea tensional':
         df = df[df['condition'].isin(['migraña sin aura', 'cefalea tensional'])]
         y = (df['condition'] == 'migraña sin aura').astype(int)
         X = df[feature_cols].values

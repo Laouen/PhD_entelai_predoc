@@ -8,13 +8,13 @@ data_preprocess:
     X: npy
     y: npy
     features: npy
-    label_encoder: pickle
   cache_output: On
   function: entelai_predoc_modules.preprocess_data.preprocess_data
   parameters:
     curated_targets_file: ./data/predoc_fleni_targets_curada.xlsx
     df_predoc_responses_file: ./data/predoc_fleni_responses.csv
-    target_schema: 'migrañas vs otras' # 'Migraña sin aura vs otras', 'Cefalea segundaria vs resto', 'Migraña vs CTA', 'Migraña sin aura vs cefalea tensional'
+    output_file: './processed_df.csv'
+    target_schema: 'Migrañas vs otras' #'Migraña sin aura vs otras', 'Cefalea segundaria vs resto', 'Migraña vs CTA', 'Migraña sin aura vs cefalea tensional'
 
 data_split:
   input_map:
