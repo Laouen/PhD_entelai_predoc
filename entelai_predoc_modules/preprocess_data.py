@@ -1,16 +1,23 @@
-from sklearn.preprocessing import LabelEncoder, MultiLabelBinarizer, MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import MultiLabelBinarizer, MinMaxScaler, OneHotEncoder
 import pandas as pd
-import numpy as np
 import json
 
+##############################################################
+## ********* Feature and options to process lists ********* ##
+##############################################################
+
 features_to_drop = [
-    '¿Qué medicación/es toma actualmente cuando tiene dolor de cabeza?', # Posible biased feature by the patient doctor
-    '¿Qué medicación preventiva se encuentra usando?', # Posible biased feature by the patient doctor
-    '¿Qué medicación preventiva usó?', # Posible biased feature by the patient doctor
-    '¿Utilizó alguna vez para su dolor aplicaciones de botox?', # Posible biased feature by the patient doctor
+    '¿Qué medicación/es toma actualmente cuando tiene dolor de cabeza?', # Possible biased feature by the patient doctor
+    '¿Qué medicación preventiva se encuentra usando?', # Possible biased feature by the patient doctor
+    '¿Qué medicación preventiva usó?', # Possible biased feature by the patient doctor
+    '¿Utilizó alguna vez para su dolor aplicaciones de botox?', # Possible biased feature by the patient doctor
+    '¿Le dieron alguna vez medicación preventiva?', # Possible biased feature by the patient doctor
     'Señale la o las afirmaciones correctas en cuanto a las características  de su dolor luego del golpe en la cabeza', # This feature has almost no data
     'Cuán seguido bebe alcohol', # This feature has not enough data
     '¿Cómo considera que es su respuesta a la medicación preventiva actual?', # This feature has not enough data and it can algo be biased by the doctor
+    'Actualmente bebo alcohol', # This is a binary feature but has almost no data
+    'Actualmente fumo tabaco en cualquiera de sus formas', # This is a binary feature but has almost no data
+    'Uso drogas ilícitas', # This is a binary feature but has almost no data
 ]
 
 columns_to_drop = [
@@ -67,37 +74,24 @@ single_label_features = {
     'En las últimas 4 semanas, ¿con qué frecuencia se ha sentido harta/o o irritada/o debido a su dolor de cabeza?': 'Nunca',
     'En relación a la actividad física, marque la que corresponda': 'No hago ejercicio',
     'En relación a mis hábitos de sueño': 'Duermo bien de noche',
-    'Por favor indique que parte de la cabeza o cara le duele': 'empty',
-    'Señale la opción correcta con respecto a la frecuencia de sus dolores (cuantas veces tiene dolor por semana o por mes, por ejemplo)': 'Tengo_dolor_todos_los_días',
+    'Por favor indique que parte de la cabeza o cara le duele': 'A los costados de la cabeza (bitemporal)',
+    'Señale la opción correcta con respecto a la frecuencia de sus dolores (cuantas veces tiene dolor por semana o por mes, por ejemplo)': 'Tengo dolor todos los días',
     '¿Con qué frecuencia el dolor de cabeza limita su capacidad para realizar actividades diarias habituales como las tareas domésticas, el trabajo, los estudios o actividades sociales?': 'Nunca',
-    '¿Cuánto tiempo le dura la cefalea o dolor de cabeza si no toma ningún remedio, o si lo toma pero no tiene respuesta?': 'empty',
-    '¿Durante el episodio de dolor de cabeza, ha notado que le molestan las luces o los sonidos y que trata de evitarlos?': 'empty',
-    '¿Le dieron alguna vez medicación preventiva?': 'No',
-    '¿Siente que su dolor de cabeza es pulsátil (le late la cabeza) u opresivo (siente como si le estuviesen apretando la cabeza)?': 'empty',
-    '¿Cómo considera que es su respuesta a la medicación preventiva actual?': 'Mala_(sin_ninguna_respuesta)',
+    '¿Cuánto tiempo le dura la cefalea o dolor de cabeza si no toma ningún remedio, o si lo toma pero no tiene respuesta?': 'Tengo un dolor continuo desde hace 3 meses o más',
+    '¿Durante el episodio de dolor de cabeza, ha notado que le molestan las luces o los sonidos y que trata de evitarlos?': 'No, no me molestan ni la luz ni los sonidos',
+    '¿Siente que su dolor de cabeza es pulsátil (le late la cabeza) u opresivo (siente como si le estuviesen apretando la cabeza)?': 'No, siento como agujazos o cuchilladas en alguna parte de la cabeza',
     'Cuando usted tiene dolor de cabeza, ¿con qué frecuencia el dolor es intenso?': 'Nunca'
 }
 
 # key: feature col name, value: The possitive label
 binary_features = {
-    'Actualmente bebo alcohol': 'Si',
-    'Actualmente fumo tabaco en cualquiera de sus formas': 'Si',
-    'Uso drogas ilícitas': 'Si',
     '¿Este dolor es algo que comenzó recientemente (en el último mes)?': 'Sí, es un dolor que nunca tuve en mi vida y que comenzó hace menos de un mes',
     '¿Ha notado que su dolor empeora con el ejercicio, como caminar, correr o subir escaleras?': 'Si, empeora si me muevo. Trato de quedarme quieto o acostado',
     '¿Ha sentido náuseas, ganas de vomitar o ha llegado a vomitar durante o después de su dolor de cabeza?': 'Si, he tenido náuseas o ganas de vomitar y/o he llegado a vomitar'
 }
 
 # all features that are strings codifying arrays of features
-array_features = numerical_features + multi_label_features + single_label_features + list(binary_features.keys())
-
-# Columns where empty values must be replaced by a token 'empty'
-to_fill_empty_columns = [
-    'Por favor indique que parte de la cabeza o cara le duele',
-    '¿Cuánto tiempo le dura la cefalea o dolor de cabeza si no toma ningún remedio, o si lo toma pero no tiene respuesta?',
-    '¿Durante el episodio de dolor de cabeza, ha notado que le molestan las luces o los sonidos y que trata de evitarlos?',
-    '¿Siente que su dolor de cabeza es pulsátil (le late la cabeza) u opresivo (siente como si le estuviesen apretando la cabeza)?'
-]
+array_features = numerical_features + multi_label_features + list(single_label_features.keys()) + list(binary_features.keys())
 
 response_to_drug_cols = [
     '¿Cómo considera que es su respuesta a la medicación Diclofenac?',
@@ -150,7 +144,7 @@ condition_group = {
     'migraña con aura': 'migraña con aura'
 }
 
-desencadenantes_col = 'He identificado los siguientes desencadenantes de mi dolor que siempre o casi siempre que me expongo, tengo dolor de cabeza',
+desencadenantes_col = 'He identificado los siguientes desencadenantes de mi dolor que siempre o casi siempre que me expongo, tengo dolor de cabeza'
 desencadenantes_values = [
     'No tengo ningún desencadenante',
     'Muchas horas de sueño',
@@ -171,25 +165,28 @@ desencadenantes_values = [
 
 affirmations_col = 'Indique cuál/cuáles de las siguientes afirmaciones es correcta'
 affirmations_values = [
-    'Tengo_diagnóstico_previo_de_cáncer_con_o_sin_tratamiento',
-    'Tengo_diagnóstico_previo_de_alguna_de_las_siguientes_condiciones:_HIV,_meningitis,_toxoplasmosis,_linfoma,_malfomación_vascular/cerebral',
-    'Estoy_recibiendo_tratamiento_inmunosupresor_por_cualquier_causa',
-    'Tengo_más_de_50_años_y_hasta_ahora_nunca_había_tenido_este_dolor_de_cabeza',
-    'Tengo_fiebre_sin_una_causa_aparente_clara_(diagnóstico_de_gripe_o_resfrío,_neumonía_u_otra_infección_diagnosticada_por_un_médico)',
-    'He_perdido_más_de_5_kilos_en_el_último_mes_sin_hacer_dieta_o_incrementado_actividad_física',
-    'La_cefalea_o_dolor_de_cabeza_apareció_de_golpe_y_llegó_a_su_máxima_intensidad_en_tan_solo_segundos',
-    'Tuve_un_golpe_muy_fuerte_en_la_cabeza_y_este_dolor_apareció_luego_o_hasta_7_días_después_del_golpe',
-    'La_cefalea_solo_me_ocurre_durante_o_luego_de_toser_o_hacer_un_esfuerzo_físico',
-    'El_dolor_de_cabeza_empeora_luego_de_15_minutos_parado_o_sentado_y_suele_mejorar_si_me_acuesto_por_más_de_15_minutos',
-    'El_dolor_de_cabeza_me_aparece_o_apareció_durante_la_actividad_sexual',
-    'Me_realizaron_recientemente_una_punción_lumbar'
+    'Tengo diagnóstico previo de cáncer con o sin tratamiento',
+    'Tengo diagnóstico previo de alguna de las siguientes condiciones: HIV, meningitis, toxoplasmosis, linfoma, malfomación vascular/cerebral',
+    'Estoy recibiendo tratamiento inmunosupresor por cualquier causa',
+    'Tengo más de 50 años y hasta ahora nunca había tenido este dolor de cabeza',
+    'Tengo fiebre sin una causa aparente clara (diagnóstico de gripe o resfrío, neumonía u otra infección diagnosticada por un médico)',
+    'He perdido más de 5 kilos en el último mes sin hacer dieta o incrementado actividad física',
+    'La cefalea o dolor de cabeza apareció de golpe y llegó a su máxima intensidad en tan solo segundos',
+    'Tuve un golpe muy fuerte en la cabeza y este dolor apareció luego o hasta 7 días después del golpe',
+    'La cefalea solo me ocurre durante o luego de toser o hacer un esfuerzo físico',
+    'El dolor de cabeza empeora luego de 15 minutos parado o sentado y suele mejorar si me acuesto por más de 15 minutos',
+    'El dolor de cabeza me aparece o apareció durante la actividad sexual',
+    'Me realizaron recientemente una punción lumbar'
 ]
 
+#########################################
+## ******** Auxiliar functions ******* ##
+#########################################
 
 def parse_desencadenantes_value(values):
     return [
         'otro'
-        if value not in desencadenantes_values.values else value
+        if value not in desencadenantes_values else value
         for value in values
     ]
 
@@ -227,12 +224,17 @@ def calculate_response_to_drugs(x):
 
 
 def check_and_extract_single_value(x):
-    if len(x) > 1:
+    if len(x) != 1:
         raise ValueError(f'{x} should be an array of length 1.')
     return x[0];
 
 def fill_empty_array_rows(x):
     return "['empty']" if x == '' else x
+
+
+###########################################
+## ***** Main preprocess function ****** ##
+###########################################
 
 def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file, target_schema):
 
@@ -274,10 +276,17 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
     #####################################################
     ## ****** Read and clean-up responses data ******* ##
     #####################################################
+
     df_predoc_responses = pd.read_csv(
         df_predoc_responses_file,
         sep=';',
         keep_default_na=False
+    )
+
+    df_predoc_responses.rename(
+        lambda x: x.strip(),
+        inplace=True,
+        axis=1
     )
 
     df_predoc_responses.drop(
@@ -300,45 +309,54 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
         axis=1
     )
 
+    # Extract value of excluyent values features (binary features are excluyents)
+    single_value_cols = list(binary_features.keys()) + list(single_label_features.keys())
+
+    # Remove rows with empty binary data
+    completed_binary_row = df_predoc_responses[single_value_cols].apply(
+        lambda xs: '' not in xs.values,
+        axis=1
+    )
+
+    df_predoc_responses = df_predoc_responses[completed_binary_row]
+
     # Parse columns with string representations of arrays to python arrays
-    df_predoc_responses[to_fill_empty_columns] = df_predoc_responses[to_fill_empty_columns].replace('', "['empty']")
-    df_predoc_responses[array_features] = df_predoc_responses[array_features].replace('', '[]')
-    df_predoc_responses[array_features] = df_predoc_responses[array_features].apply(
+    df_predoc_responses.loc[:,array_features] = df_predoc_responses[array_features].replace('', '[]')
+    df_predoc_responses.loc[:,array_features] = df_predoc_responses[array_features].apply(
         lambda col: col.apply(parse_array_value),
         axis=1
     )
 
     # Parse and scale numerical features between 0 and 1
-    df_predoc_responses[numerical_features] = df_predoc_responses[numerical_features].apply(
+    df_predoc_responses.loc[:, numerical_features] = df_predoc_responses[numerical_features].apply(
         lambda col: col.apply(parse_numerical_value),
         axis=1
     )
     scaler = MinMaxScaler()
-    df_predoc_responses[numerical_features] = scaler.fit_transform(
+    df_predoc_responses.loc[:, numerical_features] = scaler.fit_transform(
         df_predoc_responses[numerical_features].values
     )
 
-    # extract value of excluyent values features (binary features are excluyents)
-    single_value_cols = list(binary_features.keys()) + list(single_label_features.keys())
+    # Extract single value from array
     for col in single_value_cols:
-        df_predoc_responses.loc[:, col] = df_predoc_responses.loc[:, col].apply(check_and_extract_single_value)
+        df_predoc_responses.loc[:, col] = df_predoc_responses[col].apply(check_and_extract_single_value)
 
     # Convert binary col to 0 = False, 1 = True values
     for col, pos_label in binary_features.items():
-        df_predoc_responses.loc[:, col] = (df_predoc_responses.loc[:, col] == pos_label).astype(int)
-    
+        df_predoc_responses.loc[:, col] = (df_predoc_responses[col] == pos_label).astype(int)
+
     # One hot encode single label features droping one value per feature to break linear correlation:
-    single_features, drop = zip(*single_label_features.items())
-    enc = OneHotEncoder(drop=drop)
-    X = enc.fit_transform(df_predoc_responses[single_features])
+    single_features, drop = map(list,zip(*single_label_features.items()))
+    encoder = OneHotEncoder(drop=drop)
+    X = encoder.fit_transform(df_predoc_responses[single_features])
 
     new_single_label_features = [
-        f'{col}"__{c}' 
-        for i, col in enumerate(single_features)
-        for c in enc.categories_[i] if c != drop[i]
+        f'{feature}__{option}' 
+        for options, feature, drop_option in zip(encoder.categories_, single_features, drop)
+        for option in options if option != drop_option
     ]
-    
-    df_predoc_responses[new_single_label_features] = X
+
+    df_predoc_responses[new_single_label_features] = X.toarray()
     df_predoc_responses.drop(
         single_features,
         axis=1,
@@ -346,19 +364,19 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
     )
 
     # Clean feature with other option
-    df_predoc_responses[desencadenantes_col] = df_predoc_responses[desencadenantes_col].apply(parse_desencadenantes_value)
+    df_predoc_responses.loc[:, desencadenantes_col] = df_predoc_responses[desencadenantes_col].apply(parse_desencadenantes_value)
 
     # Clean feature with some incorrect values we are not sure where they come from
-    df_predoc_responses[affirmations_col] = df_predoc_responses[affirmations_col].apply(clean_affirmation_values)
+    df_predoc_responses.loc[:, affirmations_col] = df_predoc_responses[affirmations_col].apply(clean_affirmation_values)
 
     # Multi label binarizer for multi label features
     new_multi_label_features = []
-    for col in multi_label_features:
+    for feature in multi_label_features:
         mlb = MultiLabelBinarizer()
-        X = mlb.fit_transform(df_predoc_responses[col].values)
-        new_multi_label_features.append([f'{col}__{c}' for c in mlb.classes_])
+        X = mlb.fit_transform(df_predoc_responses[feature].values)
+        new_multi_label_features.append([f'{feature}__{option}' for option in mlb.classes_])
         df_predoc_responses[new_multi_label_features[-1]] = X
-        df_predoc_responses.drop(col, axis=1, inplace=True)
+        df_predoc_responses.drop(feature, axis=1, inplace=True)
 
     df_predoc_responses['questionnarie_date'] = pd.to_datetime(df_predoc_responses['questionnarie_date']).dt.date.astype('datetime64[ns]')
 
@@ -395,11 +413,11 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
     # final feature cols
     feature_cols = (
         demografic_features
+        + ['respuesta a medicamento']
         + numerical_features 
         + list(binary_features.keys()) 
-        + new_multi_label_features 
         + new_single_label_features 
-        + ['respuesta a medicamento']
+        + new_multi_label_features
     )
 
 
@@ -408,28 +426,23 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
     # Extract final X and y matrixes
     if target_schema == 'Migrañas vs otras':
         y = df['condition'].isin(['migraña sin aura', 'migraña con aura']).astype(int)
-        X = df[feature_cols].values
     
     elif target_schema == 'Migraña sin aura vs otras':
         y = (df['condition'] == 'migraña sin aura').astype(int)
-        X = df[feature_cols].values
     
     elif target_schema == 'Cefalea segundaria vs resto':
         y = (df['condition'] == 'cefalea secundaria').astype(int)
-        X = df[feature_cols].values
     
     elif target_schema == 'Migraña vs CTA':
         df = df[df['condition'].isin(['migraña sin aura', 'migraña con aura', 'CTA'])]
         y = df['condition'].isin(['migraña sin aura', 'migraña con aura']).astype(int)
-        X = df[feature_cols].values
     
     elif target_schema == 'Migraña sin aura vs cefalea tensional':
         df = df[df['condition'].isin(['migraña sin aura', 'cefalea tensional'])]
         y = (df['condition'] == 'migraña sin aura').astype(int)
-        X = df[feature_cols].values
 
     return {
-        'X': X,
+        'X': df[feature_cols].values,
         'y': y,
         'features': feature_cols
     }
