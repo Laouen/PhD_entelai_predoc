@@ -1,5 +1,6 @@
 from sklearn.preprocessing import MultiLabelBinarizer, MinMaxScaler, OneHotEncoder
 import pandas as pd
+import numpy as np
 import json
 
 ##############################################################
@@ -7,17 +8,25 @@ import json
 ##############################################################
 
 features_to_drop = [
-    '¿Qué medicación/es toma actualmente cuando tiene dolor de cabeza?', # Possible biased feature by the patient doctor
-    '¿Qué medicación preventiva se encuentra usando?', # Possible biased feature by the patient doctor
-    '¿Qué medicación preventiva usó?', # Possible biased feature by the patient doctor
-    '¿Utilizó alguna vez para su dolor aplicaciones de botox?', # Possible biased feature by the patient doctor
-    '¿Le dieron alguna vez medicación preventiva?', # Possible biased feature by the patient doctor
-    'Señale la o las afirmaciones correctas en cuanto a las características  de su dolor luego del golpe en la cabeza', # This feature has almost no data
-    'Cuán seguido bebe alcohol', # This feature has not enough data
-    '¿Cómo considera que es su respuesta a la medicación preventiva actual?', # This feature has not enough data and it can algo be biased by the doctor
-    'Actualmente bebo alcohol', # This is a binary feature but has almost no data
-    'Actualmente fumo tabaco en cualquiera de sus formas', # This is a binary feature but has almost no data
-    'Uso drogas ilícitas', # This is a binary feature but has almost no data
+    # Possible biased feature by the patient doctor
+    '¿Qué medicación/es toma actualmente cuando tiene dolor de cabeza?',
+    # Possible biased feature by the patient doctor
+    '¿Qué medicación preventiva se encuentra usando?',
+    # Possible biased feature by the patient doctor
+    '¿Qué medicación preventiva usó?',
+    # Possible biased feature by the patient doctor
+    '¿Utilizó alguna vez para su dolor aplicaciones de botox?',
+    # Possible biased feature by the patient doctor
+    '¿Le dieron alguna vez medicación preventiva?',
+    # This feature has almost no data
+    'Señale la o las afirmaciones correctas en cuanto a las características  de su dolor luego del golpe en la cabeza',
+    'Cuán seguido bebe alcohol',  # This feature has not enough data
+    # This feature has not enough data and it can algo be biased by the doctor
+    '¿Cómo considera que es su respuesta a la medicación preventiva actual?',
+    'Actualmente bebo alcohol',  # This is a binary feature but has almost no data
+    # This is a binary feature but has almost no data
+    'Actualmente fumo tabaco en cualquiera de sus formas',
+    'Uso drogas ilícitas',  # This is a binary feature but has almost no data
 ]
 
 columns_to_drop = [
@@ -41,12 +50,15 @@ target_col = {
     'Diagnóstico del médico': 'condition'
 }
 
-demografic_features = [
+numerical_demografic_features = [
     'patient_age',
-    'patient_gender',
     'patient_height',
     'patient_weight'
 ]
+
+categorical_demografic_features = {
+    'patient_gender': 'Otros'
+}
 
 numerical_features = [
     'En cuanto a la intensidad del dolor, señale en una escala de 1 a 10 la intensidad máxima a la que han llegado sus dolores',
@@ -66,7 +78,7 @@ multi_label_features = [
     'Indique cuál/cuáles de las siguientes afirmaciones es correcta'
 ]
 
-#key: feature col name, value: The label to drop to avoid linear correlation between new one hot encoded labels in the one vs all fashion 
+#key: feature col name, value: The label to drop to avoid linear correlation between new one hot encoded labels in the one vs all fashion
 single_label_features = {
     'Cuando tiene dolor de cabeza, ¿con qué frecuencia desearía poder acostarse?': 'Nunca',
     'En las últimas 4 semanas, ¿con qué frecuencia el dolor de cabeza ha limitado su capacidad para concentrarse en el trabajo o en las actividades diarias?': 'Nunca',
@@ -91,7 +103,8 @@ binary_features = {
 }
 
 # all features that are strings codifying arrays of features
-array_features = numerical_features + multi_label_features + list(single_label_features.keys()) + list(binary_features.keys())
+array_features = numerical_features + multi_label_features + \
+    list(single_label_features.keys()) + list(binary_features.keys())
 
 response_to_drug_cols = [
     '¿Cómo considera que es su respuesta a la medicación Diclofenac?',
@@ -217,10 +230,10 @@ def clean_condition_value(x):
 
 def calculate_response_to_drugs(x):
     x_str = ' '.join(x)
-    for option in ['Excelente', 'Buena', 'Regular', 'Mala']:
+    for option, value in [('Excelente', 1), ('Buena', 0.75), ('Regular', 0.5), ('Mala', 0.25)]:
         if option in x_str:
-            return option
-    return None
+            return value
+    return 0
 
 
 def check_and_extract_single_value(x):
@@ -332,9 +345,14 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
         lambda col: col.apply(parse_numerical_value),
         axis=1
     )
+
     scaler = MinMaxScaler()
-    df_predoc_responses.loc[:, numerical_features] = scaler.fit_transform(
-        df_predoc_responses[numerical_features].values
+    all_numerical_features = np.concatenate([
+        numerical_features,
+        numerical_demografic_features
+    ])
+    df_predoc_responses.loc[:, all_numerical_features] = scaler.fit_transform(
+        df_predoc_responses[all_numerical_features].values
     )
 
     # Extract single value from array
@@ -345,13 +363,18 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
     for col, pos_label in binary_features.items():
         df_predoc_responses.loc[:, col] = (df_predoc_responses[col] == pos_label).astype(int)
 
+
     # One hot encode single label features droping one value per feature to break linear correlation:
-    single_features, drop = map(list,zip(*single_label_features.items()))
+    all_single_label_features = {
+        **single_label_features,
+        **categorical_demografic_features
+    }
+    single_features, drop = map(list, zip(*all_single_label_features.items()))
     encoder = OneHotEncoder(drop=drop)
     X = encoder.fit_transform(df_predoc_responses[single_features])
 
     new_single_label_features = [
-        f'{feature}__{option}' 
+        f'{feature}__{option}'
         for options, feature, drop_option in zip(encoder.categories_, single_features, drop)
         for option in options if option != drop_option
     ]
@@ -377,6 +400,7 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
         new_multi_label_features.append([f'{feature}__{option}' for option in mlb.classes_])
         df_predoc_responses[new_multi_label_features[-1]] = X
         df_predoc_responses.drop(feature, axis=1, inplace=True)
+    new_multi_label_features = np.concatenate(new_multi_label_features)
 
     df_predoc_responses['questionnarie_date'] = pd.to_datetime(df_predoc_responses['questionnarie_date']).dt.date.astype('datetime64[ns]')
 
@@ -411,15 +435,13 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
     )
 
     # final feature cols
-    feature_cols = (
-        demografic_features
-        + ['respuesta a medicamento']
-        + numerical_features 
-        + list(binary_features.keys()) 
-        + new_single_label_features 
-        + new_multi_label_features
-    )
-
+    feature_cols = np.concatenate([
+        ['respuesta a medicamento'],
+        all_numerical_features,
+        list(binary_features.keys()),
+        new_single_label_features,
+        new_multi_label_features
+    ])
 
     df.to_csv(output_file, sep=';', index=False)
 
@@ -443,6 +465,6 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
 
     return {
         'X': df[feature_cols].values,
-        'y': y,
+        'y': y.values,
         'features': feature_cols
     }

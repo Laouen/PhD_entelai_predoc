@@ -2,18 +2,16 @@ general:
   module_paths: ['/home/lbelloli/git/doctorado/PhD_entelai_predoc']
   save_path: ./
   verbose: 11
+  pandas_sep: ;
 
 data_preprocess:
-  output_storage_type: 
-    X: npy
-    y: npy
-    features: npy
+  output_storage_type: npy
   cache_output: On
   function: entelai_predoc_modules.preprocess_data.preprocess_data
   parameters:
     curated_targets_file: ./data/predoc_fleni_targets_curada.xlsx
     df_predoc_responses_file: ./data/predoc_fleni_responses.csv
-    output_file: './processed_df.csv'
+    output_file: ./results/processed_df.csv
     target_schema: 'Migrañas vs otras' #'Migraña sin aura vs otras', 'Cefalea segundaria vs resto', 'Migraña vs CTA', 'Migraña sin aura vs cefalea tensional'
 
 data_split:
@@ -31,11 +29,27 @@ data_split:
       random_state: 42
       shuffle: On
 
-feature_selection:
+data_augmentation:
   input_map:
     data_split:
-      X_train: X_train
-      y_train: y_train
+      X_train: X
+      y_train: y
+  output_storage_type: npy
+  cache_output: On
+  function: entelai_predoc_modules.data_augmentation.data_augmentation
+  parameters:
+    multiple: 'balanced'
+
+feature_selection:
+  bypass_inout_map:
+    X_train: X_train
+    X_test: X_test
+  bypass: On
+  input_map:
+    data_augmentation:
+      X: X_train
+      y: y_train
+    data_split:
       X_test: X_test
   output_storage_type: npy
   cache_output: On
@@ -45,8 +59,8 @@ model_selection:
   input_map:
     feature_selection:
       X_train: X
-    data_split:
-      y_train: y
+    data_augmentation:
+      y: y
   output_storage_type: 
     estimator: pickle 
     cv_results_: csv
@@ -55,7 +69,7 @@ model_selection:
   parameters:
     parameter_optimizer: 
       class: sklearn.model_selection.GridSearchCV
-      scoring: accuracy # esto tiene que poder ser una funcion custom desde el módulo también
+      scoring: recall # esto tiene que poder ser una funcion custom desde el módulo también
       parameters: 
         refit: On
     cv: 
@@ -64,27 +78,82 @@ model_selection:
         n_splits: 5
         shuffle: On
         random_state: 42
-    models: 
+    models:
+      MultiLayerPerceptron:
+        class: sklearn.neural_network.MLPClassifier
+        constructor_params:
+          solver: adam
+          activation: relu
+          shuffle: True
+          batch_size: auto
+          max_iter: 2000
+          n_iter_no_change: 10
+          random_state: 42
+          tol: 0.0001
+          warm_start: False
+        param_grid:
+          learning_rate_init: [0.01, 0.001, 0.0001]
+          hidden_layer_sizes: [[32, 8], [62, 16], [62, 16, 8]]
+          alpha: [0, 0.0001, 0.01]
       LogisticRegression:
         class: sklearn.linear_model.LogisticRegression
         constructor_params:
+          warm_start: False
           random_state: 42
-          penalty: l2
           max_iter: 10000
+          n_jobs: -1
         param_grid:
-          C: [0.2, 0.4]
-          solver: ['lbfgs']
+          C: [0.2, 0.4, 1, 100]
+          penalty: ['l1','l2']
+          solver: ['lbfgs', 'liblinear', 'saga']
         fit_params:
           sample_weight: null
       RandomForestClasifier:
         class: sklearn.ensemble.RandomForestClassifier
         constructor_params:
+          warm_start: False
           random_state: 42
+          n_jobs: -1
         param_grid:
-          max_depth: [2,4,6]
-          n_estimators: [10, 100, 1000]
+          max_depth: [3, 4, 6, 8]
+          n_estimators: [200, 300, 500]
+          min_samples_split: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         fit_params:
           sample_weight: null
+      GradientBoostingClassifier:
+        class: sklearn.ensemble.GradientBoostingClassifier
+        constructor_params:
+          warm_start: False
+          random_state: 42
+        param_grid:
+          max_depth: [3, 4, 6, 8]
+          n_estimators: [200, 300, 500]
+          min_samples_split: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+      SupportVectorMachine:
+        class: sklearn.svm.SVC
+        constructor_params:
+          random_state: 42
+          probability: True
+          class_weight: null
+        param_grid:
+          C: [1, 10, 100, 1000]
+          kernel: ['rbf', 'sigmoid', 'poly']
+          gamma: ['auto', 0.1, 0.01, 0.001]
+
+feature_importance:
+  input_map:
+    model_selection:
+      estimator: estimator
+    feature_selection:
+      X_train: X
+    data_augmentation:
+      y: y
+  output_storage_type: npy
+  cache_output: Off
+  function: sklearn.inspection.permutation_importance
+  parameters:
+    scoring: recall
+    random_state: 42
 
 predict_train:
   input_map:
@@ -92,10 +161,10 @@ predict_train:
       estimator: estimator
     feature_selection:
       X_train: X
-    data_split:
-      y_train: y
+    data_augmentation:
+      y: y
   output_storage_type: npy
-  cache_output: Off
+  cache_output: On
   class: ConPipe.GraphNode.ModelPrediction.ModelPrediction
   parameters:
     cv:
@@ -124,15 +193,15 @@ evaluate_test:
       y_pred: y_pred
       y_probas: y_probas
       classes: classes
-  cache_output: On
+  cache_output: Off
   class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: test
-    output_path: ./
+    output_path: ./results
     classes: [0,1]
     class_labels: 
-      0: 0
-      1: 1
+      0: 'Otros'
+      1: 'Migraña'
     scores: 
       accuracy:
         function: sklearn.metrics.accuracy_score
@@ -159,15 +228,15 @@ evaluate_train:
       y_pred: y_pred
       y_probas: y_probas
       classes: classes
-  cache_output: On
+  cache_output: Off
   class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: train
-    output_path: ./
+    output_path: ./results
     classes: [0,1]
     class_labels: 
-      0: 0
-      1: 1
+      0: 'Otros'
+      1: 'Migraña'
     scores: 
       accuracy:
         function: sklearn.metrics.accuracy_score
