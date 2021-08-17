@@ -249,7 +249,7 @@ def fill_empty_array_rows(x):
 ## ***** Main preprocess function ****** ##
 ###########################################
 
-def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file, target_schema):
+def preprocess_data(curated_targets_file, df_predoc_responses_file, target_schema):
 
     ###################################################
     ## ****** Read abd clean-up curated data ******* ##
@@ -443,28 +443,33 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, output_file,
         new_multi_label_features
     ])
 
-    df.to_csv(output_file, sep=';', index=False)
-
     # Extract final X and y matrixes
-    if target_schema == 'Migrañas vs otras':
+    if target_schema == 'Migrañas_vs_otras':
         y = df['condition'].isin(['migraña sin aura', 'migraña con aura']).astype(int)
+        class_labels = ['Otros', 'Migraña']
     
-    elif target_schema == 'Migraña sin aura vs otras':
+    elif target_schema == 'Migraña_sin_aura_vs_otras':
         y = (df['condition'] == 'migraña sin aura').astype(int)
-    
-    elif target_schema == 'Cefalea segundaria vs resto':
+        class_labels = ['Otros', 'Migraña sin aura']    
+
+    elif target_schema == 'Cefalea_segundaria_vs_resto':
         y = (df['condition'] == 'cefalea secundaria').astype(int)
+        class_labels = ['Otros', 'Cefalea secundaria']
     
-    elif target_schema == 'Migraña vs CTA':
+    elif target_schema == 'Migraña_vs_CTA':
         df = df[df['condition'].isin(['migraña sin aura', 'migraña con aura', 'CTA'])]
         y = df['condition'].isin(['migraña sin aura', 'migraña con aura']).astype(int)
+        class_labels = ['CTA', 'Migraña']
     
-    elif target_schema == 'Migraña sin aura vs cefalea tensional':
+    elif target_schema == 'Migraña_sin_aura_vs_cefalea_tensional':
         df = df[df['condition'].isin(['migraña sin aura', 'cefalea tensional'])]
         y = (df['condition'] == 'migraña sin aura').astype(int)
+        class_labels = ['Cefalea tensional', 'Migrañá sin aura']
 
     return {
         'X': df[feature_cols].values,
         'y': y.values,
-        'features': feature_cols
+        'features': feature_cols,
+        'class_labels': class_labels,
+        'classes': [0, 1] # currently clases are binary 0 or 1
     }

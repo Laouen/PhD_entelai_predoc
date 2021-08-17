@@ -11,8 +11,7 @@ data_preprocess:
   parameters:
     curated_targets_file: ./data/predoc_fleni_targets_curada.xlsx
     df_predoc_responses_file: ./data/predoc_fleni_responses.csv
-    output_file: ./results/processed_df.csv
-    target_schema: 'Migrañas vs otras' #'Migraña sin aura vs otras', 'Cefalea segundaria vs resto', 'Migraña vs CTA', 'Migraña sin aura vs cefalea tensional'
+    target_schema: 'Migrañas_vs_otras' #'Migraña_sin_aura_vs_otras', 'Cefalea_segundaria_vs_resto', 'Migraña_vs_CTA', 'Migraña_sin_aura_vs_cefalea_tensional'
 
 data_split:
   input_map:
@@ -188,6 +187,8 @@ predict_test:
 
 evaluate_test:
   input_map:
+    data_preprocess:
+      class_labels: class_labels
     predict_test:
       y_true: y_true
       y_pred: y_pred
@@ -197,23 +198,35 @@ evaluate_test:
   class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: test
-    output_path: ./results
-    classes: [0,1]
-    class_labels: 
-      0: 'Otros'
-      1: 'Migraña'
-    scores: 
+    output_path: ./results # This parameter is overwrited by the command line
+    scores:
+      confusion_matrix:
+        function: sklearn.metrics.confusion_matrix
+        score_type: pred
       accuracy:
         function: sklearn.metrics.accuracy_score
         score_type: pred
+      precision:
+        function: sklearn.metrics.precision_score
+        score_type: pred
+        parameters:
+          average: weighted
+          pos_label: 1
+      precision:
+        function: sklearn.metrics.f1_score
+        score_type: pred
+        parameters:
+          average: weighted
+          pos_label: 1
       recall:
         function: sklearn.metrics.recall_score
         score_type: pred
         parameters:
           average: weighted
+          pos_label: 1
     charts:
       roc:
-        function: ConPipe.visualizations.roc_chart
+        function: ConPipe.visualizations.roc_cruve_binary
       confusion_matrix: 
         function: ConPipe.visualizations.confusion_matrix_chart
         parameters:
@@ -223,6 +236,8 @@ evaluate_test:
 
 evaluate_train:
   input_map:
+    data_preprocess:
+      class_labels: class_labels
     predict_train:
       y_true: y_true
       y_pred: y_pred
@@ -232,23 +247,35 @@ evaluate_train:
   class: ConPipe.GraphNode.ResultEvaluation.ResultEvaluation
   parameters:
     tag: train
-    output_path: ./results
-    classes: [0,1]
-    class_labels: 
-      0: 'Otros'
-      1: 'Migraña'
-    scores: 
+    output_path: ./results # This parameter is overwrited by the command line
+    scores:
+      confusion_matrix:
+        function: sklearn.metrics.confusion_matrix
+        score_type: pred
       accuracy:
         function: sklearn.metrics.accuracy_score
         score_type: pred
+      precision:
+        function: sklearn.metrics.precision_score
+        score_type: pred
+        parameters:
+          average: weighted
+          pos_label: 1
+      precision:
+        function: sklearn.metrics.f1_score
+        score_type: pred
+        parameters:
+          average: weighted
+          pos_label: 1
       recall:
         function: sklearn.metrics.recall_score
         score_type: pred
         parameters:
           average: weighted
+          pos_label: 1
     charts:
       roc:
-        function: ConPipe.visualizations.roc_chart
+        function: ConPipe.visualizations.roc_cruve_binary
       confusion_matrix: 
         function: ConPipe.visualizations.confusion_matrix_chart
         parameters:
