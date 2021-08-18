@@ -452,7 +452,7 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, target_schem
         y = (df['condition'] == 'migraña sin aura').astype(int)
         class_labels = ['Otros', 'Migraña sin aura']    
 
-    elif target_schema == 'Cefalea_segundaria_vs_resto':
+    elif target_schema == 'Cefalea_secundaria_vs_resto':
         y = (df['condition'] == 'cefalea secundaria').astype(int)
         class_labels = ['Otros', 'Cefalea secundaria']
     
@@ -471,5 +471,6 @@ def preprocess_data(curated_targets_file, df_predoc_responses_file, target_schem
         'y': y.values,
         'features': feature_cols,
         'class_labels': class_labels,
-        'classes': [0, 1] # currently clases are binary 0 or 1
+        'classes': [0, 1], # currently clases are binary 0 or 1
+        'processed_data': df,
     }
