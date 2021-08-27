@@ -17,7 +17,7 @@ data_preprocess:
   parameters:
     curated_targets_file: ./data/predoc_fleni_targets_curada.xlsx
     df_predoc_responses_file: ./data/predoc_fleni_responses.csv
-    target_schema: 'Migrañas_vs_otras' #'Migraña_sin_aura_vs_otras', 'Cefalea_secundaria_vs_resto', 'Migraña_vs_CTA', 'Migraña_sin_aura_vs_cefalea_tensional'
+    target_schema: 'MSA_vs_cefalea_tensional_vs_CTA'
 
 data_split:
   input_map:
@@ -233,7 +233,7 @@ evaluate_test:
           pos_label: 1
     charts:
       roc:
-        function: ConPipe.visualizations.roc_cruve_binary
+        function: ConPipe.visualizations.roc_chart
       confusion_matrix: 
         function: ConPipe.visualizations.confusion_matrix_chart
         parameters:
@@ -282,7 +282,7 @@ evaluate_train:
           pos_label: 1
     charts:
       roc:
-        function: ConPipe.visualizations.roc_cruve_binary
+        function: ConPipe.visualizations.roc_chart
       confusion_matrix: 
         function: ConPipe.visualizations.confusion_matrix_chart
         parameters:

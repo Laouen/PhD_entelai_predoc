@@ -7,3 +7,5 @@ run_ml_experiment.py ./experiment.yaml --general.save_path ./Cefalea_segundaria_
 run_ml_experiment.py ./experiment.yaml --general.save_path ./Migraña_vs_CTA --data_preprocess.target_schema Migraña_vs_CTA --evaluate_test.output_path ./Migraña_vs_CTA/results --evaluate_train.output_path ./Migraña_vs_CTA/results
 
 run_ml_experiment.py ./experiment.yaml --general.save_path ./Migraña_sin_aura_vs_cefalea_tensional --data_preprocess.target_schema Migraña_sin_aura_vs_cefalea_tensional --evaluate_test.output_path ./Migraña_sin_aura_vs_cefalea_tensional/results --evaluate_train.output_path ./Migraña_sin_aura_vs_cefalea_tensional/results
+
+run_ml_experiment.py ./experiment.yaml --general.save_path ./MSA_vs_cefalea_tensional_vs_CTA --data_preprocess.target_schema MSA_vs_cefalea_tensional_vs_CTA --evaluate_test.output_path ./MSA_vs_cefalea_tensional_vs_CTA/results --evaluate_train.output_path ./MSA_vs_cefalea_tensional_vs_CTA/results

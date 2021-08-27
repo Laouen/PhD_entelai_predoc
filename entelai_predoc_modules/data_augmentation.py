@@ -3,20 +3,16 @@ import numpy as np
 
 def data_augmentation(X, y, multiple):
 
-    # Note: Se asume que las clases existentes son 0, 1.
-    more_frequent_class = np.bincount(y).argmax()
-    less_frequent_class = abs(more_frequent_class - 1)
-
+    classes, counts = np.unique(y, return_counts=True)
+    
     if multiple == 'balanced':
-        total_features = len(np.where(y == more_frequent_class)[0])
         resample_dict = {
-            more_frequent_class: total_features,
-            less_frequent_class: total_features
+            c: counts.max() for c in classes
         }
     else:
         resample_dict = {
-            more_frequent_class: len(np.where(y == more_frequent_class)[0]),
-            less_frequent_class: len(np.where(y == less_frequent_class)[0]) * multiple
+            classes_: count
+            for classes_, count in zip(classes,counts)
         }
 
     smote = BorderlineSMOTE(sampling_strategy=resample_dict)
