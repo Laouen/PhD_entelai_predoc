@@ -78,6 +78,10 @@ model_selection:
       parameters: 
         refit: On
         n_jobs: -1
+    scoring:
+      function: sklearn.metrics.recall_score
+      parameters:
+        average: weighted
     cv: 
       class: sklearn.model_selection.StratifiedKFold 
       parameters:
@@ -158,7 +162,7 @@ feature_importance:
   cache_output: Off
   function: sklearn.inspection.permutation_importance
   parameters:
-    scoring: recall
+    scoring: accuracy
     random_state: 42
 
 predict_train:
