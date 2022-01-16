@@ -223,7 +223,7 @@ evaluate_test:
         parameters:
           average: weighted
           pos_label: 1
-      precision:
+      f1_score:
         function: sklearn.metrics.f1_score
         score_type: pred
         parameters:
@@ -272,7 +272,7 @@ evaluate_train:
         parameters:
           average: weighted
           pos_label: 1
-      precision:
+      f1_score:
         function: sklearn.metrics.f1_score
         score_type: pred
         parameters:

@@ -1,0 +1,7 @@
+score_name;score_val
+confusion_matrix;"[[407   0   2]
+ [  0 397  12]
+ [  1   5 403]]"
+accuracy;0.9837000814995925
+f1_score;0.9837177262431787
+recall;0.9837000814995925

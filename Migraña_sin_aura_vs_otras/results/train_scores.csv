@@ -1,0 +1,6 @@
+score_name;score_val
+confusion_matrix;"[[365  42]
+ [ 21 386]]"
+accuracy;0.9226044226044227
+f1_score;0.9225528765923388
+recall;0.9226044226044227
